@@ -1,0 +1,81 @@
+import sys
+import requests
+from bs4 import BeautifulSoup
+
+args = sys.argv
+
+Lan_List = ['Arabic', 'German', 'English', 'Spanish', 'French', 'Hebrew', 'Japanese', 'Dutch', 'Polish', 'Portuguese', 'Romanian', 'Russian', 'Turkish']
+
+my_lan = args[1]
+trans_lan = args[2]
+trans_word = args[3]
+if my_lan.capitalize() not in Lan_List:
+    print('Sorry, the program doesn\'t support {}'.format(my_lan))
+    sys.exit()
+elif trans_lan != 'all':
+    if trans_lan.capitalize() not in Lan_List:
+        print('Sorry, the program doesn\'t support {}'.format(trans_lan))
+        sys.exit()
+user_agent = 'Mozilla/5.0'
+if trans_lan != 'all':
+    Lan_List = [trans_lan]
+else:
+    Lan_List.remove(my_lan.capitalize())
+
+file = open('{}.txt'.format(trans_word), 'w', encoding='utf-8')
+
+
+for language in Lan_List:
+
+    r = requests.get('https://context.reverso.net/translation/{}-{}/{}'.format(my_lan, language, trans_word).lower(), headers={'User-Agent': user_agent})
+    if r.status_code == 200:
+        pass
+    else:
+        print('Sorry, unable to find {}'.format(trans_word))
+        sys.exit()
+
+
+
+    soup = BeautifulSoup(r.content, 'html.parser')
+
+    trans_tags = soup.find_all('a', {'class': 'translation'})
+    example_tags = soup.find_all('div', {'class': ['src', 'trg']})
+
+    word_list = []
+    example_list = []
+    for p in trans_tags:
+        word_list.append(p.text.strip())
+    word_list.pop(0)
+    for p in example_tags:
+        example_list.append((p.text.strip()))
+    for i in example_list:
+        if str('') in example_list:
+            example_list.remove('')
+    example_list = example_list[:10]
+
+    word_output = '{} Translations:'.format(language.capitalize())
+    file.write(word_output + '\n')
+    for i in word_list[0:5]:
+        file.write(i + '\n')
+    file.write('\n' * 2)
+
+    print(word_output)
+    for i in word_list[0:5]:
+        print(i)
+
+    print('\n')
+
+
+    example_output = '{} examples:'.format(language.capitalize())
+    file.write(example_output + '\n')
+    print(example_output)
+    for i in range(10):
+        if i % 2 == 0:
+            file.write(example_list[i] + ':' + '\n')
+            print(example_list[i] + ':')
+        else:
+            file.write(example_list[i] + '\n' * 2)
+            print(example_list[i] + '\n')
+
+
+file.close()
